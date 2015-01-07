@@ -1,0 +1,11 @@
+use quizz-database;
+
+db.createUser(
+    {
+      user: "quizz-admin",
+      pwd: "th3Qu1zzP4ss",
+      roles: [
+         { role: "readWrite", db: "quizz-admin" }
+      ]
+    }
+)
