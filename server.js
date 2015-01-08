@@ -5,6 +5,7 @@ var express        = require('express');
 var app            = express();
 var bodyParser     = require('body-parser'); // parses the HTTP arguments (except multipart)
 var methodOverride = require('method-override'); // override HTTP verbs to add PUT & DELETE
+var mongoose	   = require('mongoose');
 
 // configuration ===========================================
 
@@ -15,7 +16,7 @@ var db = require('./config/db');
 var port = process.env.PORT || 8080;
 
 // connect
-//mongoose.connect(db.url);
+mongoose.connect(db.url);
 
 // parameter parsing =======================================
 
@@ -32,8 +33,16 @@ app.use(methodOverride('X-HTTP-Method-Override'));
 app.use(express.static(__dirname + '/public')); 
 
 // routes ==================================================
-require('./app/routes')(app); // configure our routes
-// ./app/routes returns a function, so require('./app/routes')(app) calls the function with app in parameter
+var router = express.Router();
+
+// HERE, MAKE SOME CHECKS, FOR AUTHENTIFICATION FOR EXAMPLE. OR ACTIVATE LOGGING
+router.use(function(req, res, next) {
+    next();
+});
+
+require('./app/api-routes')(router); // configure our routes
+
+app.use("/api", router);
 
 // start app ===============================================
 // startup our app at http://localhost:8080

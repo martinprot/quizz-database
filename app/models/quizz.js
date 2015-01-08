@@ -1,9 +1,22 @@
 // app/models/quizz.js
 
-// get mongoose module
+// get modules
 var mongoose = require('mongoose');
+var Schema   = mongoose.Schema;
+// var languageSchema = require('./language').schema;
+// var questionSchema = require('./question').schema;
 
-// define our nerd model
-module.exports = mongoose.model('Quizz', {
-    name : {type : String, default: ''}
+// Schema definition
+var quizzSchema = new Schema({
+	qzid		: Schema.ObjectId,
+	name		: String,
+	date 		: 	{ 
+		type 	: Date,
+		default : Date.now 
+	},
+	// questions 	: [ questionSchema ],
+	// language	: languageSchema
 });
+
+// Model export
+module.exports = mongoose.model('Quizz', quizzSchema);
