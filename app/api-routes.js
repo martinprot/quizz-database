@@ -1,12 +1,38 @@
 // app/api-routes.js ===================================================================
 
-
 // select the model in database
 var Quizz = require('./models/quizz');
 
-module.exports = function(router) {
+function checkSession(req, res, next) {
+	if(req.isAuthenticated()) return next();
+	else {
+		res.status(401).json({error: "Session should be authenticated"});
+	}
+}
+
+module.exports = function(router, passport) {
+	var checkToken = passport.authenticate("token", { session: false });
+	
     // server routes ===========================================================
     // Authentication routes
+	// API/USER/
+	router.route("/user/")
+	// create user
+	.post(passport.authenticate("local-signup"), function(req, res) {
+		res.status(201).json(req.user);
+	});
+	
+	// API/SESSION
+	router.route("/session/")
+	// create session (ie: login)
+	.post(passport.authenticate("local-login"), function(req, res) {
+		res.status(200).json(req.user);
+	})
+	// delete session (ie: disconnect)
+	.delete(function(req, res) {
+		
+	});
+	
 
 	// API/QUIZZ/ __________________________________
 	router.route("/quizz/")
@@ -25,7 +51,7 @@ module.exports = function(router) {
 		
 	})
 	// add a quizz	
-	.post(function(req, res) {
+	.post(passport.authenticate("bearer", { session: false }), function(req, res) {
 		// check req.body
 		if(req.body) {
 			var quizz = new Quizz();
@@ -64,7 +90,7 @@ module.exports = function(router) {
 		});
 	})
 	// edit a given quizz
-	.put(function(req, res) {
+	.put(checkToken, function(req, res) {
 		Quizz.findById(req.params.quizz_id, function(err, quizz) {
 			if(err) {
 				res.status(400).json({
@@ -91,7 +117,7 @@ module.exports = function(router) {
 		});
 	})
 	// delete the given quizz
-	.delete(function(req, res) {
+	.delete(checkToken, function(req, res) {
 		Quizz.findById(req.params.quizz_id, function(err, quizz) {
 			if(err) {
 				res.status(400).json({

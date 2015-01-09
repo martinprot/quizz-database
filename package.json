@@ -1,10 +1,17 @@
 {
-  "name": "100-percent-console",
-  "main": "server.js",
-  "dependencies": {
-    "express" : "~4.5.1",
-    "mongoose" : "~3.8.0",
-    "body-parser" : "~1.4.2",
-    "method-override" : "~2.0.2"        
+  "name"			: "100-percent-console",
+  "main"			: "server.js",
+  "dependencies" 	: {
+	    "express" 				: "~4.5.1",
+	    "mongoose" 				: "~3.8.0",
+	    "body-parser" 			: "~1.4.2",
+	    "method-override"		: "~2.0.2",
+		"passport" 				: "~0.1.17",         
+	    "passport-local" 		: "~0.1.6",
+		"passport-http-bearer" 	: "~1.0.1",
+		
+		"morgan"				: "~1.0.0",
+		"bcrypt-nodejs" 		: "latest",
+		"jwt-simple"			: "latest"
   }
 }

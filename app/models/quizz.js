@@ -3,7 +3,7 @@
 // get modules
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
-// var languageSchema = require('./language').schema;
+// languageSchema = require('./language').schema;
 // var questionSchema = require('./question').schema;
 
 // Schema definition
@@ -12,7 +12,7 @@ var quizzSchema = new Schema({
 	name		: String,
 	date 		: 	{ 
 		type 	: Date,
-		default : Date.now 
+		default : Date.now
 	},
 	// questions 	: [ questionSchema ],
 	// language	: languageSchema

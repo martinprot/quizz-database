@@ -1,11 +1,14 @@
 // server.js
 
 // modules =================================================
-var express        = require('express');
-var app            = express();
-var bodyParser     = require('body-parser'); // parses the HTTP arguments (except multipart)
-var methodOverride = require('method-override'); // override HTTP verbs to add PUT & DELETE
-var mongoose	   = require('mongoose');
+var express			= require('express');
+var app				= express();
+var bodyParser		= require('body-parser'); // parses the HTTP arguments (except multipart)
+var methodOverride	= require('method-override'); // override HTTP verbs to add PUT & DELETE
+var mongoose		= require('mongoose');
+var passport 		= require('passport');
+
+var morgan 			= require('morgan');
 
 // configuration ===========================================
 
@@ -18,8 +21,13 @@ var port = process.env.PORT || 8080;
 // connect
 mongoose.connect(db.url);
 
-// parameter parsing =======================================
+// Middlewares =============================================
 
+// Configure passport signup & singin
+require('./config/passport')(passport); // pass passport for configuration
+
+// log every request to the console
+app.use(morgan("dev"));
 // parse application/json
 app.use(bodyParser.json())
 // parse application/vnd.api+json as json
@@ -28,6 +36,10 @@ app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 app.use(bodyParser.urlencoded({ extended: false }))
 // override with the X-HTTP-Method-Override header in the request. simulate DELETE/PUT
 app.use(methodOverride('X-HTTP-Method-Override')); 
+
+// initialize passport
+app.use(passport.initialize());
+
 
 // set the static files location /public/img will be /img for users
 app.use(express.static(__dirname + '/public')); 
@@ -40,7 +52,7 @@ router.use(function(req, res, next) {
     next();
 });
 
-require('./app/api-routes')(router); // configure our routes
+require('./app/api-routes')(router, passport); // configure our routes
 
 app.use("/api", router);
 
