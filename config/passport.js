@@ -83,11 +83,10 @@ module.exports = function(passport) {
     // =========================================================================
     // TOKEN AUTHENTICATION ====================================================
     // =========================================================================
-	passport.use(new BearerStrategy(
+	passport.use('token', new BearerStrategy(
 		// BearerStrategy uses "access_token" POST parameter for retieving token.
 		// (RFC 6750) http://tools.ietf.org/html/rfc6750
 		function(token, done) {
-			console.log(token);
 			User.findOne({ token: token }, function(err, user) {
 				if(err) return done(err);
 				if(user) {

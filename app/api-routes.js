@@ -1,7 +1,10 @@
 // app/api-routes.js ===================================================================
 
 // select the model in database
-var Quizz = require('./models/quizz');
+var Quizz		= require('./models/quizz');
+var Question	= require('./models/question');
+var User		= require('./models/user');
+
 
 function checkSession(req, res, next) {
 	if(req.isAuthenticated()) return next();
@@ -16,14 +19,23 @@ module.exports = function(router, passport) {
     // server routes ===========================================================
     // Authentication routes
 	// API/USER/
-	router.route("/user/")
+	router.route("/user")
+	// list users
+	.get(function(req, res) {
+		User.find(function(err, users) {
+			if(err) res.status(400).json({error: err});
+			else {
+				res.status(200).json(users);
+			}
+		});
+	})
 	// create user
 	.post(passport.authenticate("local-signup"), function(req, res) {
 		res.status(201).json(req.user);
 	});
 	
 	// API/SESSION
-	router.route("/session/")
+	router.route("/session")
 	// create session (ie: login)
 	.post(passport.authenticate("local-login"), function(req, res) {
 		res.status(200).json(req.user);
@@ -33,9 +45,10 @@ module.exports = function(router, passport) {
 		
 	});
 	
-
-	// API/QUIZZ/ __________________________________
-	router.route("/quizz/")
+	// =============================================
+	// API/QUIZZ/ ==================================
+	// =============================================
+	router.route("/quizz")
 	// get all quizz
 	.get(function(req, res) {
 		Quizz.find(function(err, quizzArray) {
@@ -51,16 +64,18 @@ module.exports = function(router, passport) {
 		
 	})
 	// add a quizz	
-	.post(passport.authenticate("bearer", { session: false }), function(req, res) {
+	.post(checkToken, function(req, res) {
 		// check req.body
-		if(req.body) {
+		if(req.body && req.body.name && req.body.language) {
 			var quizz = new Quizz();
-			quizz.name = req.body.name;
+			quizz.name 		= req.body.name;
+			quizz.language 	= req.body.language;
 			
 			quizz.save(function(err) {
 				if(err) {
+					console.log("probleme" + err);
 					res.status(400).json({ error: err });
-				} 
+				}
 				else {
 					res.status(201).json({ result: quizz });
 				}
@@ -73,14 +88,16 @@ module.exports = function(router, passport) {
 		}
 	});
 
-    // API/QUIZZ/:ID ______________________________
+	// =============================================
+	// API/QUIZZ/:ID ===============================
+	// =============================================
 	router.route('/quizz/:quizz_id')
 	// get one quizz
 	.get(function(req, res) {
-		Quizz.findById(req.params.quizz_id, function(err, quizz) {
-			if(err) {
-				res.status(400).json({ error: err });
-			}
+		Quizz.findById(req.params.quizz_id)
+			 .populate("questions")
+			 .exec(function(err, quizz) {
+			if(err) res.status(500).json({ error: err });
 			else if (quizz == null) {
 				res.status(404).json({ error: "requested element not found" });
 			}
@@ -91,36 +108,43 @@ module.exports = function(router, passport) {
 	})
 	// edit a given quizz
 	.put(checkToken, function(req, res) {
-		Quizz.findById(req.params.quizz_id, function(err, quizz) {
-			if(err) {
-				res.status(400).json({
-					error: err
-				});
-			}
-			else if (quizz == null) {
-				res.status(404).json({
-					error: "requested element not found"
-				});
-			}
-			else {
-				if(req.body.name) quizz.name = req.body.name;
-				quizz.date = Date.now;
-				quizz.save(function(err) {
-					if(err) {
-						res.status(400).json({error: err});
-					} 
-					else {
-						res.status(200).json(quizz);
-					}
-				});
-			}
-		});
+		if(req.body && (req.body.name || req.body.language || req.body.questions)) {		
+			Quizz.findById(req.params.quizz_id, function(err, quizz) {
+				if(err) {
+					res.status(400).json({
+						error: err
+					});
+				}
+				else if (quizz == null) {
+					res.status(404).json({
+						error: "requested element not found"
+					});
+				}
+				else {
+					if(req.body.name) 		quizz.name = req.body.name;
+					if(req.body.language) 	quizz.name = req.body.language;
+					if(req.body.questions) 	quizz.questions = req.body.questions.split(";");
+					quizz.set("updated", Date.now());
+					quizz.save(function(err) {
+						if(err) {
+							res.status(400).json({error: err});
+						} 
+						else {
+							res.status(200).json(quizz);
+						}
+					});
+				}
+			});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters" });
+		}		
 	})
 	// delete the given quizz
 	.delete(checkToken, function(req, res) {
 		Quizz.findById(req.params.quizz_id, function(err, quizz) {
 			if(err) {
-				res.status(400).json({
+				res.status(500).json({
 					error: err
 				});
 			}
@@ -132,10 +156,135 @@ module.exports = function(router, passport) {
 			else {
 				quizz.remove(function(err){
 					if(err) {
-						res.status(400).json({error: err});
+						res.status(500).json({error: err});
 					} 
 					else {
 						res.status(200).json(quizz);
+					}
+				});
+			}
+		});
+	});
+	
+	// =============================================
+	// API/QUIZZ/:ID/QUESTION ======================
+	// =============================================
+	router.route('/quizz/:quizz_id/question')
+	// get list of questions
+	.get(function(req, res) {
+		Quizz.findById(req.params.quizz_id)
+			 .populate("questions")
+			 .exec(function(err, quizz) {
+			 if(err) res.status(500).json({ error: err.toString() });
+			 else {
+				if(quizz) {
+					res.status(200).json(quizz.questions);
+				}
+				else {
+					res.status(404).json({ error: "quizz not found" });
+				}
+			 }
+		});
+	})
+	// creates a new question
+	.post(checkToken, function(req, res) {
+		if(req.body && req.body.text && req.body.detail && req.body.choices && req.body.answer) {
+			Quizz.findById(req.params.quizz_id)
+			 	 .populate("questions")
+			 	 .exec(function(err, quizz) {
+				 if(err) res.status(500).json({ error: err.toString() });
+				 else {
+					if(quizz) {
+						var question = new Question();
+						question.text	 = req.body.text;
+						question.detail	 = req.body.detail;
+						question.choices = req.body.choices.split(";");
+						question.answer	 = req.body.answer;
+						question.quizzes.push(req.params.quizz_id);
+						
+						question.save(function(err) {
+							if(err) res.status(500).json({ error: err.toString() });
+							else {
+								quizz.questions.push(question._id);
+								quizz.save(function(err) {
+									if(err) res.status(500).json({ error: err.toString() });
+									else {
+										res.status(201).json(question);
+									}
+								});
+							}
+						});
+					}
+					else {
+						res.status(404).json({ error: "quizz not found" });
+					}
+				 }
+			});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters" });
+		}
+	});
+	
+	// =============================================
+	// API/QUIZZ/:ID/QUESTION/:ID ==================
+	// =============================================
+	router.route('/quizz/:quizz_id/question/:question_id')
+	// get a question
+	.get(function(req, res) {
+		console.log(req.params.question_id);
+		Question.findById(req.params.question_id, function(err, question) {
+			if(err) res.status(500).json({ error: err });
+			else if (question == null) {
+				res.status(404).json({ error: "question not found" });
+			}
+			else {
+				res.status(200).json(question);
+			}
+		});
+	})
+	// edit a question
+	.put(checkToken, function(req, res) {
+		if(req.body && (req.body.text || req.body.detail || req.body.choices || req.body.answer || req.body.quizzes)) {
+			Question.findById(req.params.question_id, function(err, question) { 
+				 if(err) res.status(500).json({ error: err.toString() });
+				 else {
+					if(question) {
+						if(req.body.text)		question.text	 = req.body.text;
+						if(req.body.detail)		question.detail	 = req.body.detail;
+						if(req.body.choices)	question.choices = req.body.choices.split(";");
+						if(req.body.answer)		question.answer	 = req.body.answer;
+						if(req.body.quizzes)	question.quizzes = req.body.quizzes.split(";");
+						
+						question.save(function(err) {
+							if(err) res.status(500).json({ error: err.toString() });
+							else {
+								res.status(200).json(question);
+							}
+						});
+					}
+					else {
+						res.status(404).json({ error: "question not found" });
+					}
+				 }
+			});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters" });
+		}
+	})
+	// delete a question
+	.delete(checkToken, function(req, res) {
+		Question.findById(req.params.question_id, function(err, question) {
+			if(err) res.status(500).json({ error: err });
+			else if (question == null) {
+				res.status(404).json({ error: "question not found" });
+			}
+			else {
+				question.remove(function(err){
+					if(err) res.status(500).json({ error: err });
+					else {
+						res.status(200).json(question);
 					}
 				});
 			}

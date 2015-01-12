@@ -3,20 +3,39 @@
 // get modules
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
-// languageSchema = require('./language').schema;
-// var questionSchema = require('./question').schema;
+var questionSchema = require('./question').schema;
 
 // Schema definition
 var quizzSchema = new Schema({
-	qzid		: Schema.ObjectId,
 	name		: String,
-	date 		: 	{ 
+	created		: 	{ 
 		type 	: Date,
 		default : Date.now
 	},
-	// questions 	: [ questionSchema ],
-	// language	: languageSchema
+	updated		: 	{ 
+		type 	: Date,
+		default : Date.now
+	},
+	questions 	: [ { type: Schema.ObjectId, ref: 'Question'} ],
+	language	: String
 });
+
+// middlewares =================
+quizzSchema.pre('remove', function(next) {
+	// Nullify this quizz ref from question list
+    this.model('Question').update(
+        {questions: this._id}, 
+        {$pull: {questions: this._id}}, 
+        {multi: true},
+        next
+    );
+});
+
+quizzSchema.pre('save', function (next) {
+	this.updated = Date.now();
+	next();
+});
+
 
 // Model export
 module.exports = mongoose.model('Quizz', quizzSchema);
