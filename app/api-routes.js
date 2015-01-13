@@ -124,7 +124,6 @@ module.exports = function(router, passport) {
 					if(req.body.name) 		quizz.name = req.body.name;
 					if(req.body.language) 	quizz.name = req.body.language;
 					if(req.body.questions) 	quizz.questions = req.body.questions.split(";");
-					quizz.set("updated", Date.now());
 					quizz.save(function(err) {
 						if(err) {
 							res.status(400).json({error: err});
@@ -289,6 +288,12 @@ module.exports = function(router, passport) {
 				});
 			}
 		});
+	});
+	
+	
+	// To block all other requests
+	router.route('*').all(function(req, res) {
+		res.status(404).send("API not found");
 	});
 	
 };

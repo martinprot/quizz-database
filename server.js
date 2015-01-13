@@ -44,17 +44,24 @@ app.use(passport.initialize());
 // set the static files location /public/img will be /img for users
 app.use(express.static(__dirname + '/public')); 
 
-// routes ==================================================
-var router = express.Router();
+// API Routes ==================================================
+var apiRouter = express.Router();
 
-// HERE, MAKE SOME CHECKS, FOR AUTHENTIFICATION FOR EXAMPLE. OR ACTIVATE LOGGING
-router.use(function(req, res, next) {
+apiRouter.use(function(req, res, next) {
+	console.log("API router used");
     next();
 });
+require('./app/api-routes')(apiRouter, passport); // configure our API routes
+app.use("/api", apiRouter);
 
-require('./app/api-routes')(router, passport); // configure our routes
-
-app.use("/api", router);
+// Common Routes ==================================================
+var commonRouter = express.Router();
+commonRouter.use(function(req, res, next) {
+	console.log("Common router used");
+    next();
+});
+require('./app/common-routes')(commonRouter, passport); // configure our common routes
+app.use("/", commonRouter);
 
 // start app ===============================================
 // startup our app at http://localhost:8080

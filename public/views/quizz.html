@@ -1,0 +1,12 @@
+<!-- public/views/quizz.html -->
+
+<div class="jumbotron text-center">
+    <h1>Quizz</h1>
+
+    <p>{{ title }}</p>
+    <ul>
+    	<li ng-repeat="quizz in quizzes">
+			{{quizz.name}}
+    	</li>
+    </ul>
+</div>
