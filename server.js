@@ -10,18 +10,21 @@ var passport 		= require('passport');
 
 var morgan 			= require('morgan');
 
-// configuration ===========================================
-
+// =============================================================
+// configuration ===============================================
+// =============================================================
 // config files
 var db = require('./config/db');
 
 // set our port
 var port = process.env.PORT || 8080;
 
-// connect
+// connect DB
 mongoose.connect(db.url);
 
-// Middlewares =============================================
+// =============================================================
+// Middlewares =================================================
+// =============================================================
 
 // Configure passport signup & singin
 require('./config/passport')(passport); // pass passport for configuration
@@ -40,30 +43,35 @@ app.use(methodOverride('X-HTTP-Method-Override'));
 // initialize passport
 app.use(passport.initialize());
 
-
 // set the static files location /public/img will be /img for users
 app.use(express.static(__dirname + '/public')); 
 
+// =============================================================
 // API Routes ==================================================
+// =============================================================
 var apiRouter = express.Router();
 
 apiRouter.use(function(req, res, next) {
-	console.log("API router used");
+//	console.log("API router used");
     next();
 });
 require('./app/api-routes')(apiRouter, passport); // configure our API routes
 app.use("/api", apiRouter);
 
-// Common Routes ==================================================
+// =============================================================
+// Common Routes ===============================================
+// =============================================================
 var commonRouter = express.Router();
 commonRouter.use(function(req, res, next) {
-	console.log("Common router used");
+//	console.log("Common router used");
     next();
 });
 require('./app/common-routes')(commonRouter, passport); // configure our common routes
 app.use("/", commonRouter);
 
-// start app ===============================================
+// =============================================================
+// start the app ===============================================
+// =============================================================
 // startup our app at http://localhost:8080
 app.listen(port);               
 

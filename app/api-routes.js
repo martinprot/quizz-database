@@ -6,12 +6,82 @@ var Question	= require('./models/question');
 var User		= require('./models/user');
 
 
+// =============================================
+// AUTHENTICATION ==============================
+// =============================================
+
 function checkSession(req, res, next) {
 	if(req.isAuthenticated()) return next();
 	else {
 		res.status(401).json({error: "Session should be authenticated"});
 	}
 }
+
+// =============================================
+// QUESTION OPERATIONS =========================
+// =============================================
+
+function getQuestion(questionId, callback) {
+	Question.findById(questionId, function(err, question) {
+		if(err) callback(500, {error: err});
+		else if (question == null) {
+			callback(404, {error: "Question not found"});
+		}
+		else {
+			callback(200, question);
+		}
+	});
+}
+
+function putQuestion(questionId, body, callback) {
+	Question.findById(questionId, function(err, question) { 
+		if(err) callback(500, {error: err});
+		else {
+			if(question) {
+				if(body.text)		question.text	 = body.text;
+				if(body.detail)		question.detail	 = body.detail;
+				if(body.choices)	question.choices = body.choices.split(";");
+				if(body.answer)		question.answer	 = body.answer;
+				if(body.quizzes)	question.quizzes = body.quizzes.split(";");
+				
+				question.save(function(err) {
+					if(err) callback(500, {error: err});
+					else {
+						callback(200, question);
+					}
+				});
+			}
+			else {
+				callback(404, {error: "Question not found"});
+			}
+		 }
+	});
+}
+
+function deleteQuestion(questionId, callback) {
+	console.log("1");
+	Question.findById(questionId, function(err, question) {
+	console.log("2");
+		if(err) callback(500, {error: err});
+		else if (question == null) {
+			callback(404, {error: "Question not found"});
+		}
+		else {
+	console.log(question);
+			question.remove(function(err){
+	console.log("4");
+				if(err) callback(500, {error: err});
+				else {
+					callback(200, {result: "removed"});
+				}
+			});
+		}
+	});
+}
+
+// =============================================
+// API ROUTES ==================================
+// =============================================
 
 module.exports = function(router, passport) {
 	var checkToken = passport.authenticate("token", { session: false });
@@ -73,7 +143,6 @@ module.exports = function(router, passport) {
 			
 			quizz.save(function(err) {
 				if(err) {
-					console.log("probleme" + err);
 					res.status(400).json({ error: err });
 				}
 				else {
@@ -231,41 +300,15 @@ module.exports = function(router, passport) {
 	router.route('/quizz/:quizz_id/question/:question_id')
 	// get a question
 	.get(function(req, res) {
-		console.log(req.params.question_id);
-		Question.findById(req.params.question_id, function(err, question) {
-			if(err) res.status(500).json({ error: err });
-			else if (question == null) {
-				res.status(404).json({ error: "question not found" });
-			}
-			else {
-				res.status(200).json(question);
-			}
+		getQuestion(req.params.question_id, function(code, result) {
+			res.status(code).json(result);
 		});
 	})
 	// edit a question
 	.put(checkToken, function(req, res) {
-		if(req.body && (req.body.text || req.body.detail || req.body.choices || req.body.answer || req.body.quizzes)) {
-			Question.findById(req.params.question_id, function(err, question) { 
-				 if(err) res.status(500).json({ error: err.toString() });
-				 else {
-					if(question) {
-						if(req.body.text)		question.text	 = req.body.text;
-						if(req.body.detail)		question.detail	 = req.body.detail;
-						if(req.body.choices)	question.choices = req.body.choices.split(";");
-						if(req.body.answer)		question.answer	 = req.body.answer;
-						if(req.body.quizzes)	question.quizzes = req.body.quizzes.split(";");
-						
-						question.save(function(err) {
-							if(err) res.status(500).json({ error: err.toString() });
-							else {
-								res.status(200).json(question);
-							}
-						});
-					}
-					else {
-						res.status(404).json({ error: "question not found" });
-					}
-				 }
+		if(req.body) {
+			putQuestion(req.params.question_id, req.body, function(code, result) {
+				res.status(code).json(result);
 			});
 		}
 		else {
@@ -274,19 +317,55 @@ module.exports = function(router, passport) {
 	})
 	// delete a question
 	.delete(checkToken, function(req, res) {
-		Question.findById(req.params.question_id, function(err, question) {
-			if(err) res.status(500).json({ error: err });
-			else if (question == null) {
-				res.status(404).json({ error: "question not found" });
-			}
-			else {
-				question.remove(function(err){
-					if(err) res.status(500).json({ error: err });
-					else {
-						res.status(200).json(question);
-					}
+		deleteQuestion(req.params.question_id, function(code, result) {
+			res.status(code).json(result);
+		});
+	});
+	
+	// =============================================
+	// API/QUESTION/ ===============================
+	// =============================================
+	// Questions without quizz association
+	router.route("/question")
+	// get all questions
+	.get(function(req, res) {
+		Question.find(function(err, questions) {
+			if(err) {
+				res.status(400).json({
+					error: err
 				});
 			}
+			else {
+				res.json(questions);
+			}
+		});	
+	})
+
+	// =============================================
+	// API/QUIZZ/:ID/QUESTION/:ID ==================
+	// =============================================
+	router.route('/question/:question_id')
+	// get a question
+	.get(function(req, res) {
+		getQuestion(req.params.question_id, function(code, result) {
+			res.status(code).json(result);
+		});
+	})
+	// edit a question
+	.put(checkToken, function(req, res) {
+		if(req.body) {
+			putQuestion(req.params.question_id, req.body, function(code, result) {
+				res.status(code).json(result);
+			});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters" });
+		}
+	})
+	// delete a question
+	.delete(checkToken, function(req, res) {
+		deleteQuestion(req.params.question_id, function(code, result) {
+			res.status(code).json(result);
 		});
 	});
 	
@@ -297,4 +376,3 @@ module.exports = function(router, passport) {
 	});
 	
 };
-

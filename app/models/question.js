@@ -52,6 +52,7 @@ questionSchema.pre('remove', function(next) {
     //     {multi: true},
     //     next
     // );
+    next();
 });
 
 
