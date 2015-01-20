@@ -63,9 +63,9 @@ module.exports = function(passport) {
         // by default, local strategy uses username and password as POST parameters, we will override with email & passwd
         usernameField : 'email',
         passwordField : 'passwd',
-        passReqToCallback : false
+        passReqToCallback : true
     },
-	function(email, password, done) {
+	function(req, email, password, done) {
 		User.findOne({ email: email }, function(err, user) {
 			if(err) return done(err);
 			
@@ -84,7 +84,11 @@ module.exports = function(passport) {
     // TOKEN AUTHENTICATION ====================================================
     // =========================================================================
 	passport.use('token', new BearerStrategy(
-		// BearerStrategy uses "access_token" POST parameter for retieving token.
+		// BearerStrategy uses "access_token" POST/PUT parameter for retieving token:
+		// Key: access_token				Value: <token>
+		// BUT you also could use Authorization header as:
+		// Header: Authorization 			Value: Bearer <token>
+		
 		// (RFC 6750) http://tools.ietf.org/html/rfc6750
 		function(token, done) {
 			User.findOne({ token: token }, function(err, user) {

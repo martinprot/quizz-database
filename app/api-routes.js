@@ -59,17 +59,13 @@ function putQuestion(questionId, body, callback) {
 }
 
 function deleteQuestion(questionId, callback) {
-	console.log("1");
 	Question.findById(questionId, function(err, question) {
-	console.log("2");
 		if(err) callback(500, {error: err});
 		else if (question == null) {
 			callback(404, {error: "Question not found"});
 		}
 		else {
-	console.log(question);
 			question.remove(function(err){
-	console.log("4");
 				if(err) callback(500, {error: err});
 				else {
 					callback(200, {result: "removed"});
@@ -84,7 +80,9 @@ function deleteQuestion(questionId, callback) {
 // =============================================
 
 module.exports = function(router, passport) {
-	var checkToken = passport.authenticate("token", { session: false });
+	var checkToken  = passport.authenticate("token", { session: false });
+	var createUser  = passport.authenticate("local-signup");
+	var connectUser = passport.authenticate("local-login");
 	
     // server routes ===========================================================
     // Authentication routes
@@ -100,20 +98,77 @@ module.exports = function(router, passport) {
 		});
 	})
 	// create user
-	.post(passport.authenticate("local-signup"), function(req, res) {
+	.post(createUser, function(req, res) {
 		res.status(201).json(req.user);
 	});
 	
+	// API/USER/:USER_ID
+	router.route("/user/:user_id")
+	// list users
+	.get(function(req, res) {
+		User.find(function(err, users) {
+			if(err) res.status(400).json({error: err});
+			else {
+				res.status(200).json(users);
+			}
+		});
+	})
+	// edit user
+	.put(checkToken, function(req, res) {
+		// if iam admin or editing myself
+		if(req.user.isAdmin || req.user._id == req.params.user_id) {
+			User.findById(req.params.user_id, function(err, user) {
+				if(req.body) {
+					if(err) res.status(400).json({ error: err });
+					else if (user == null) res.status(404).json({ error: "requested element not found" });
+					else {
+						if(req.body.email) 		user.email = req.body.email;
+						if(req.body.password) 	user.password = user.generateHash(req.body.password);
+						if(req.user.isAdmin) { // Only admin access
+							if(req.body.isAdmin) 	user.isAdmin = req.body.isAdmin;
+						}
+						user.save(function(err) {
+							if(err) res.status(400).json({error: err});
+							else 	res.status(200).json(user);
+						});
+					}
+				}
+				else res.status(400).json({ error: "Wrong parameters" });
+			});
+		}
+		else res.status(401).json({ error: "Access forbidden" });
+	})
+	.delete(checkToken, function(req, res) {
+		// if iam admin or editing myself
+		if(req.user.isAdmin || req.user._id == req.params.user_id) {
+			User.findByIdAndRemove(req.params.user_id, function(err, user) {
+					if(err) res.status(400).json({ error: err });
+					else 	res.status(200).json({ result: "removed" });
+			});
+		}
+		else res.status(401).json({ error: "Access forbidden" });
+	});
+	
+	
 	// API/SESSION
 	router.route("/session")
+	// retrieve the session, only if token is in headers
+	.get(checkToken, function(req, res) {
+		res.status(200).json(req.user)
+	})
 	// create session (ie: login)
-	.post(passport.authenticate("local-login"), function(req, res) {
+	.post(connectUser, function(req, res) {
 		res.status(200).json(req.user);
 	})
 	// delete session (ie: disconnect)
-	.delete(function(req, res) {
-		
+	.delete(checkToken, function(req, res) {
+		req.user.token = "";
+		req.user.save(function(err) {
+			if(err) res.status(400).json({error: err});
+			else 	res.status(200).json({result: "disconnected"});
+		});
 	});
+
 	
 	// =============================================
 	// API/QUIZZ/ ==================================
@@ -342,7 +397,7 @@ module.exports = function(router, passport) {
 	})
 
 	// =============================================
-	// API/QUIZZ/:ID/QUESTION/:ID ==================
+	// API/QUESTION/:ID ==================
 	// =============================================
 	router.route('/question/:question_id')
 	// get a question

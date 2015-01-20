@@ -23,12 +23,15 @@ var quizzSchema = new Schema({
 // middlewares =================
 quizzSchema.pre('remove', function(next) {
 	// Nullify this quizz ref from question list
-    this.model('Question').update(
-        {questions: this._id}, 
-        {$pull: {questions: this._id}}, 
-        {multi: true},
-        next
-    );
+    var QuestionModel = this.model('Question');
+	QuestionModel.update(
+	    {quizzes: this._id},
+	    {$pull: {quizzes: this._id}},
+	    {multi: true},
+	    function(err, numberAffected, rawResponse) {
+	    	next();
+	    }
+	);
 });
 
 quizzSchema.pre('save', function (next) {

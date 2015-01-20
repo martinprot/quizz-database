@@ -7,6 +7,7 @@ var bodyParser		= require('body-parser'); // parses the HTTP arguments (except m
 var methodOverride	= require('method-override'); // override HTTP verbs to add PUT & DELETE
 var mongoose		= require('mongoose');
 var passport 		= require('passport');
+//var flash		    = require('connect-flash'); // require sessions
 
 var morgan 			= require('morgan');
 
@@ -42,6 +43,7 @@ app.use(methodOverride('X-HTTP-Method-Override'));
 
 // initialize passport
 app.use(passport.initialize());
+//app.use(flash()); // use connect-flash for flash messages stored in session
 
 // set the static files location /public/img will be /img for users
 app.use(express.static(__dirname + '/public')); 
@@ -52,7 +54,7 @@ app.use(express.static(__dirname + '/public'));
 var apiRouter = express.Router();
 
 apiRouter.use(function(req, res, next) {
-//	console.log("API router used");
+	console.log("API router used");
     next();
 });
 require('./app/api-routes')(apiRouter, passport); // configure our API routes
@@ -63,7 +65,7 @@ app.use("/api", apiRouter);
 // =============================================================
 var commonRouter = express.Router();
 commonRouter.use(function(req, res, next) {
-//	console.log("Common router used");
+	console.log("Common router used");
     next();
 });
 require('./app/common-routes')(commonRouter, passport); // configure our common routes

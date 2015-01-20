@@ -3,7 +3,6 @@
 // get module
 var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
-var quizzSchema = require('./quizz').schema;
 
 // Schema definition
 var questionSchema = new Schema({
@@ -43,16 +42,15 @@ questionSchema.methods.isRightAnswer = function(answer) {
 // middlewares =================
 questionSchema.pre('remove', function(next) {
 	// Nullify this question ref from quizz list
-	
-	// TODO: nullify. This does not work:
-	
-    // this.model('Quizz').update(
-    //     {quizzes: this._id},
-    //     {pull: {quizzes: this._id}},
-    //     {multi: true},
-    //     next
-    // );
-    next();
+	var QuizzModel = this.model('Quizz');
+	QuizzModel.update(
+	    {questions: this._id},
+	    {$pull: {questions: this._id}},
+	    {multi: true},
+	    function(err, numberAffected, rawResponse) {
+	    	next();
+	    }
+	);
 });
 
 
