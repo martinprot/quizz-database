@@ -1,6 +1,20 @@
-// public/js/services/QuizzService.js
-var quizzService = angular.module('QuizzService', []);
-quizzService.factory('Quizz', ['$http', function($http) {
+// public/js/controllers/QuizzController.js
+var quizzModule = angular.module('QuizzModule', ['LoginModule']);
+
+quizzModule.controller('QuizzController', function($scope, $location, Quizz) {
+	
+    $scope.title = 'Liste des quizzes';
+    
+    $scope.open = function(quizz) {
+	    $location.path("/quizz/" + quizz._id + "/question");
+	};
+
+    Quizz.get().success(function(quizzes) {
+    	$scope.quizzes = quizzes;
+    });
+});
+
+quizzModule.factory('Quizz', function($http, Session) {
 
     return {
         // call to GET all quizzes
@@ -24,4 +38,4 @@ quizzService.factory('Quizz', ['$http', function($http) {
         }
     }       
 
-}]);
+});
