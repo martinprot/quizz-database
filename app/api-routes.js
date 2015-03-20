@@ -33,6 +33,46 @@ function getQuestion(questionId, callback) {
 	});
 }
 
+function postQuestion(body, quizzId, callback) {
+	var question = new Question();
+	if(body.text)		question.text	 = body.text;
+	if(body.detail)		question.detail	 = body.detail;
+	if(body.choices) {
+		if(Array.isArray(body.choices))
+			question.choices = body.choices;
+		else
+			question.choices = body.choices.split(";");
+	}
+	if(body.answer)		question.answer	 = body.answer;
+	
+	var quizzList = [];
+	if(body.quizzes) {
+		if(Array.isArray(body.quizzes))
+			quizzList = body.quizzes;
+		else
+			quizzList = body.quizzes.split(";");
+	}
+	if(quizzId && quizzList.indexOf(quizzId)==-1) {
+		quizzList.push(quizzId);
+	}
+	question.quizzes =  quizzList;
+	
+	question.save(function(err) {
+		if(err) callback(500, {error: err});
+		else {
+			quizzList.forEach(function(quizzId) {
+				Quizz.findById(quizzId, function(err, quizz) {
+					quizz.questions.push(question._id);
+					quizz.save(function(err) {
+						if(err) callback(500, {error: err});
+					});
+				});
+			});
+			callback(200, question);
+		}
+	});
+}
+
 function putQuestion(questionId, body, callback) {
 	Question.findById(questionId, function(err, question) { 
 		if(err) callback(500, {error: err});
@@ -40,10 +80,19 @@ function putQuestion(questionId, body, callback) {
 			if(question) {
 				if(body.text)		question.text	 = body.text;
 				if(body.detail)		question.detail	 = body.detail;
-				if(body.choices)	question.choices = body.choices.split(";");
+				if(body.choices) {
+					if(Array.isArray(body.choices))
+						question.choices = body.choices;
+					else
+						question.choices = body.choices.split(";");
+				}
 				if(body.answer)		question.answer	 = body.answer;
-				if(body.quizzes)	question.quizzes = body.quizzes.split(";");
-				
+				if(body.quizzes) {
+					if(Array.isArray(body.quizzes))
+						question.quizzes = body.quizzes;
+					else
+						question.quizzes = body.quizzes.split(";");
+				}				
 				question.save(function(err) {
 					if(err) callback(500, {error: err});
 					else {
@@ -91,7 +140,7 @@ module.exports = function(router, passport) {
 	// list users
 	.get(function(req, res) {
 		User.find(function(err, users) {
-			if(err) res.status(400).json({error: err});
+			if(err) res.status(500).json({error: err});
 			else {
 				res.status(200).json(users);
 			}
@@ -106,10 +155,10 @@ module.exports = function(router, passport) {
 	router.route("/user/:user_id")
 	// list users
 	.get(function(req, res) {
-		User.find(function(err, users) {
-			if(err) res.status(400).json({error: err});
+		User.findById(req.params.user_id, function(err, user) {
+			if(err) res.status(500).json({error: err});
 			else {
-				res.status(200).json(users);
+				res.status(200).json(user);
 			}
 		});
 	})
@@ -119,7 +168,7 @@ module.exports = function(router, passport) {
 		if(req.user.isAdmin || req.user._id == req.params.user_id) {
 			User.findById(req.params.user_id, function(err, user) {
 				if(req.body) {
-					if(err) res.status(400).json({ error: err });
+					if(err) res.status(500).json({ error: err });
 					else if (user == null) res.status(404).json({ error: "requested element not found" });
 					else {
 						if(req.body.email) 		user.email = req.body.email;
@@ -128,12 +177,12 @@ module.exports = function(router, passport) {
 							if(req.body.isAdmin) 	user.isAdmin = req.body.isAdmin;
 						}
 						user.save(function(err) {
-							if(err) res.status(400).json({error: err});
+							if(err) res.status(500).json({error: err});
 							else 	res.status(200).json(user);
 						});
 					}
 				}
-				else res.status(400).json({ error: "Wrong parameters" });
+				else res.status(400).json({ error: "Wrong parameters", body: req.body});
 			});
 		}
 		else res.status(401).json({ error: "Access forbidden" });
@@ -142,7 +191,7 @@ module.exports = function(router, passport) {
 		// if iam admin or editing myself
 		if(req.user.isAdmin || req.user._id == req.params.user_id) {
 			User.findByIdAndRemove(req.params.user_id, function(err, user) {
-					if(err) res.status(400).json({ error: err });
+					if(err) res.status(500).json({ error: err });
 					else 	res.status(200).json({ result: "removed" });
 			});
 		}
@@ -164,7 +213,7 @@ module.exports = function(router, passport) {
 	.delete(checkToken, function(req, res) {
 		req.user.token = "";
 		req.user.save(function(err) {
-			if(err) res.status(400).json({error: err});
+			if(err) res.status(500).json({error: err});
 			else 	res.status(200).json({result: "disconnected"});
 		});
 	});
@@ -178,9 +227,7 @@ module.exports = function(router, passport) {
 	.get(function(req, res) {
 		Quizz.find(function(err, quizzArray) {
 			if(err) {
-				res.status(400).json({
-					error: err
-				});
+				res.status(500).json({ error: err });
 			}
 			else {
 				res.json(quizzArray);
@@ -198,7 +245,7 @@ module.exports = function(router, passport) {
 			
 			quizz.save(function(err) {
 				if(err) {
-					res.status(400).json({ error: err });
+					res.status(500).json({ error: err });
 				}
 				else {
 					res.status(201).json({ result: quizz });
@@ -206,9 +253,7 @@ module.exports = function(router, passport) {
 			});
 		}
 		else {
-			res.status(400).json({
-				error: "invalid parameters"
-			});
+			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}
 	});
 
@@ -235,9 +280,7 @@ module.exports = function(router, passport) {
 		if(req.body && (req.body.name || req.body.language || req.body.questions)) {		
 			Quizz.findById(req.params.quizz_id, function(err, quizz) {
 				if(err) {
-					res.status(400).json({
-						error: err
-					});
+					res.status(500).json({ error: err });
 				}
 				else if (quizz == null) {
 					res.status(404).json({
@@ -250,7 +293,7 @@ module.exports = function(router, passport) {
 					if(req.body.questions) 	quizz.questions = req.body.questions.split(";");
 					quizz.save(function(err) {
 						if(err) {
-							res.status(400).json({error: err});
+							res.status(500).json({error: err});
 						} 
 						else {
 							res.status(200).json(quizz);
@@ -260,7 +303,7 @@ module.exports = function(router, passport) {
 			});
 		}
 		else {
-			res.status(400).json({ error: "invalid parameters" });
+			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}		
 	})
 	// delete the given quizz
@@ -311,41 +354,13 @@ module.exports = function(router, passport) {
 	})
 	// creates a new question
 	.post(checkToken, function(req, res) {
-		if(req.body && req.body.text && req.body.detail && req.body.choices && req.body.answer) {
-			Quizz.findById(req.params.quizz_id)
-			 	 .populate("questions")
-			 	 .exec(function(err, quizz) {
-				 if(err) res.status(500).json({ error: err.toString() });
-				 else {
-					if(quizz) {
-						var question = new Question();
-						question.text	 = req.body.text;
-						question.detail	 = req.body.detail;
-						question.choices = req.body.choices.split(";");
-						question.answer	 = req.body.answer;
-						question.quizzes.push(req.params.quizz_id);
-						
-						question.save(function(err) {
-							if(err) res.status(500).json({ error: err.toString() });
-							else {
-								quizz.questions.push(question._id);
-								quizz.save(function(err) {
-									if(err) res.status(500).json({ error: err.toString() });
-									else {
-										res.status(201).json(question);
-									}
-								});
-							}
-						});
-					}
-					else {
-						res.status(404).json({ error: "quizz not found" });
-					}
-				 }
+		if(req.body && req.body.text && req.body.choices && req.body.answer) {
+			postQuestion(req.body, req.params.quizz_id, function(code, result) {
+				res.status(code).json(result);
 			});
 		}
 		else {
-			res.status(400).json({ error: "invalid parameters" });
+			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}
 	});
 	
@@ -367,7 +382,7 @@ module.exports = function(router, passport) {
 			});
 		}
 		else {
-			res.status(400).json({ error: "invalid parameters" });
+			res.status(400).json({ error: "invalid parameters"});
 		}
 	})
 	// delete a question
@@ -386,14 +401,22 @@ module.exports = function(router, passport) {
 	.get(function(req, res) {
 		Question.find(function(err, questions) {
 			if(err) {
-				res.status(400).json({
-					error: err
-				});
+				res.status(500).json({ error: err });
 			}
 			else {
 				res.json(questions);
 			}
 		});	
+	})
+	.post(checkToken, function(req, res) {
+		if(req.body) {
+			postQuestion(req.body, null, function(code, result) {
+				res.status(code).json(result);
+			});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters", body: req.body });
+		}
 	})
 
 	// =============================================
@@ -414,7 +437,7 @@ module.exports = function(router, passport) {
 			});
 		}
 		else {
-			res.status(400).json({ error: "invalid parameters" });
+			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}
 	})
 	// delete a question

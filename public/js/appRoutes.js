@@ -1,6 +1,6 @@
 // public/js/appRoutes.js
 
-var routeModule = angular.module('appRoutes', ['LoginModule']);
+var routeModule = angular.module('appRoutes', ['LoginModule', 'QuestionModule']);
 
 routeModule.config(function($routeProvider, $locationProvider, AUTH_RESTRICTION) {
 
@@ -22,7 +22,7 @@ routeModule.config(function($routeProvider, $locationProvider, AUTH_RESTRICTION)
         })
         .when('/quizz/:quizz_id/question', {
             templateUrl: 'views/questions.html',
-            controller: 'QuestionController',
+            controller: 'QuestionListController',
             data: {
 				restricted: AUTH_RESTRICTION.user
             }
@@ -30,10 +30,47 @@ routeModule.config(function($routeProvider, $locationProvider, AUTH_RESTRICTION)
         // Question list
         .when('/question', {
             templateUrl: 'views/questions.html',
-            controller: 'QuestionController',
+            controller: 'QuestionListController',
             data: {
 				restricted: AUTH_RESTRICTION.user
             }
+        })
+        // new Question 
+        .when('/quizz/:quizz_id/question/new', {
+            templateUrl: 'views/question.html',
+            controller: 'QuestionController',
+            data: {
+				restricted: AUTH_RESTRICTION.user
+            },
+            resolve: {
+				question: function(){return null;}
+			}
+        })
+        .when('/question/new', {
+            templateUrl: 'views/question.html',
+            controller: 'QuestionController',
+            data: {
+				restricted: AUTH_RESTRICTION.user
+            },
+            resolve: {
+				question: function(){return null;}
+			}
+        })
+        // Question edit
+        .when('/question/:question_id', {
+            templateUrl: 'views/question.html',
+            controller: 'QuestionController',
+            data: {
+				restricted: AUTH_RESTRICTION.user
+            },
+            resolve: {
+				question: function($route, QuestionService) {
+					// The $routeParams is updated only after a route is changed. So using $route
+					return QuestionService.get($route.current.params.question_id).then(function(result) {
+						return result.data;
+					});
+				}
+			}
         })
         .otherwise({
         	redirectTo: '/'

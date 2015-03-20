@@ -8,6 +8,7 @@ var Schema   = mongoose.Schema;
 var questionSchema = new Schema({
 	text		: String,
 	detail		: String,
+	topic		: String,		
 	date 		: 	{ 
 		type 	: Date,
 		default : Date.now 

@@ -1,5 +1,4 @@
 <!-- public/views/questions.html -->
-
 <div>
     <h1>Questions</h1>
     
@@ -8,7 +7,7 @@
 		    <div class="panel-heading clearfix">
 				<div class="row">
 					<div class="col-lg-8">
-				    	<button type="button" class="btn btn-primary"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Ajouter une question</button>
+				    	<button type="button" class="btn btn-primary" ng-click="newQuestion()"><span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Ajouter une question</button>
 					</div>
 					<div class="col-lg-4">
 						<div class="input-group">
@@ -34,7 +33,7 @@
 						<td>
 							<div class="pull-right">
 							<button ng-click="editQuestion(question)" type="button" class="btn btn-default btn-sm"><span class="glyphicon glyphicon-edit" aria-hidden="true"></span></button>
-							<button ng-click="removeQuestion(question)" type="button" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
+							<button ng-click="askRemoveQuestion(question)" type="button" class="btn btn-danger btn-sm"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
 							</div>
 						</td>
 <!-- 						<td><a href="#" class="glyphicon glyphicon-edit" aria-hidden="true"></a>&nbsp;<a href="#" class="glyphicon glyphicon-trash" aria-hidden="true"></a></td> -->

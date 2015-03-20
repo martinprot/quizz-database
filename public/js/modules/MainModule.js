@@ -1,5 +1,5 @@
 // public/js/controllers/MainModule.js
-var mainModule = angular.module('MainModule', []);
+var mainModule = angular.module('MainModule', ['ui.bootstrap']);
 
 mainModule.controller('MainController', function($rootScope, $scope, AuthService, Session) {
 	$scope.currentUser = null;
