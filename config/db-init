@@ -9,3 +9,11 @@ db.createUser(
       ]
     }
 )
+
+
+user = {	"email" : "martin@yopmail.com",
+			"password" : "$2a$10$nPEUIrLHxpqGkzJHKryxeukI/wjp8/PbJfDXrW7TxH7XjMHEDNwgq", 
+			"isAdmin" : true, 
+			"creationDate" : ISODate("2015-01-16T13:53:04Z")};
+			
+db.users.insert(user);

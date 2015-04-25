@@ -1,5 +1,6 @@
 ### ME ###
 public/libs
+node_modules
 
 ### Node ###
 # Logs
