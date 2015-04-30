@@ -14,11 +14,37 @@ routeModule.config(function($routeProvider, $locationProvider, AUTH_RESTRICTION)
     	})
         // Quizz list
         .when('/quizz', {
+            templateUrl: 'views/quizzlist.html',
+            controller: 'QuizzListController',
+            data: {
+				restricted: AUTH_RESTRICTION.user
+            }
+        })
+        // Quizz list
+        .when('/quizz/new', {
             templateUrl: 'views/quizz.html',
             controller: 'QuizzController',
             data: {
 				restricted: AUTH_RESTRICTION.user
-            }
+            },
+            resolve: {
+				quizz: function(){return null;}
+			}
+        })
+        .when('/quizz/:quizz_id', {
+            templateUrl: 'views/quizz.html',
+            controller: 'QuizzController',
+            data: {
+				restricted: AUTH_RESTRICTION.user
+            },
+            resolve: {
+				quizz: function($route, QuizzService) {
+					// The $routeParams is updated only after a route is changed. So using $route
+					return QuizzService.getQuizz($route.current.params.quizz_id).then(function(result) {
+						return result.data;
+					});
+				}
+			}
         })
         .when('/quizz/:quizz_id/question', {
             templateUrl: 'views/questions.html',

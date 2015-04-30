@@ -6,25 +6,31 @@ var Schema   = mongoose.Schema;
 
 // Schema definition
 var questionSchema = new Schema({
+	customId	: { 
+		type 	: String,
+		index 	: true
+	},
 	text		: String,
-	detail		: String,
-	topic		: String,		
-	date 		: 	{ 
+	topic		: String,
+	updated		: 	{ 
+		type 	: Date,
+		default : Date.now 
+	},
+	updatedDifficulty : 	{ 
 		type 	: Date,
 		default : Date.now 
 	},
 	choices		: [ String ],
 	answer		: Number,
-	predefinedDifficulty	: { 
+	difficulty	: { 
 		type 	: Number,
 		default : 1 // 100% right answers 
 	},
-	mesuredDifficulty		: { 
-		type 	: Number,
-		default : 1 
-	},
-	quizzes		: [ { type: Schema.ObjectId, ref: 'Quizz' } ]
-	// ??? 		: Number
+	quizz		: { type: Schema.ObjectId, ref: 'Quizz' },
+	flag : 	{ 
+		type 	: Boolean,
+		default : false 
+	}
 });
 
 // methods ======================
@@ -52,6 +58,20 @@ questionSchema.pre('remove', function(next) {
 	    	next();
 	    }
 	);
+});
+
+questionSchema.post('save', function(next) {
+	if(this.quizz) {
+		// Check if this question already saved, if not, add it
+		var QuizzModel = this.model('Quizz');
+		QuizzModel.update(
+		    { _id: this.quizz },
+		    { $addToSet: { questions: this._id } },
+		    { multi: true },
+		    function(err, numberAffected, rawResponse) {
+		    }
+		);
+	}
 });
 
 

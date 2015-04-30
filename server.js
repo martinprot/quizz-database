@@ -5,6 +5,7 @@ var express			= require('express');
 var app				= express();
 var bodyParser		= require('body-parser'); // parses the HTTP arguments (except multipart)
 var methodOverride	= require('method-override'); // override HTTP verbs to add PUT & DELETE
+var multer			= require('multer'); // multipart form data (ie file upload)
 var mongoose		= require('mongoose');
 var passport 		= require('passport');
 //var flash		    = require('connect-flash'); // require sessions
@@ -40,6 +41,8 @@ app.use(bodyParser.json({ type: 'application/vnd.api+json' }));
 app.use(bodyParser.urlencoded({ extended: false }))
 // override with the X-HTTP-Method-Override header in the request. simulate DELETE/PUT
 app.use(methodOverride('X-HTTP-Method-Override')); 
+// Setup file upload for csv upload
+app.use(multer());
 
 // initialize passport
 app.use(passport.initialize());

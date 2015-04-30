@@ -1,10 +1,12 @@
 // app/api-routes.js ===================================================================
 
+var fs 			= require('fs');
+var csvParser	= require('csv-parser')
+
 // select the model in database
 var Quizz		= require('./models/quizz');
 var Question	= require('./models/question');
 var User		= require('./models/user');
-
 
 // =============================================
 // AUTHENTICATION ==============================
@@ -36,7 +38,7 @@ function getQuestion(questionId, callback) {
 function postQuestion(body, quizzId, callback) {
 	var question = new Question();
 	if(body.text)		question.text	 = body.text;
-	if(body.detail)		question.detail	 = body.detail;
+	if(body.topic)		question.topic	 = body.topic;
 	if(body.choices) {
 		if(Array.isArray(body.choices))
 			question.choices = body.choices;
@@ -44,30 +46,11 @@ function postQuestion(body, quizzId, callback) {
 			question.choices = body.choices.split(";");
 	}
 	if(body.answer)		question.answer	 = body.answer;
-	
-	var quizzList = [];
-	if(body.quizzes) {
-		if(Array.isArray(body.quizzes))
-			quizzList = body.quizzes;
-		else
-			quizzList = body.quizzes.split(";");
-	}
-	if(quizzId && quizzList.indexOf(quizzId)==-1) {
-		quizzList.push(quizzId);
-	}
-	question.quizzes =  quizzList;
+	if(quizzId)  		question.quizz 	 = quizzId;
 	
 	question.save(function(err) {
 		if(err) callback(500, {error: err});
 		else {
-			quizzList.forEach(function(quizzId) {
-				Quizz.findById(quizzId, function(err, quizz) {
-					quizz.questions.push(question._id);
-					quizz.save(function(err) {
-						if(err) callback(500, {error: err});
-					});
-				});
-			});
 			callback(200, question);
 		}
 	});
@@ -79,7 +62,7 @@ function putQuestion(questionId, body, callback) {
 		else {
 			if(question) {
 				if(body.text)		question.text	 = body.text;
-				if(body.detail)		question.detail	 = body.detail;
+				if(body.topic)		question.topic	 = body.topic;
 				if(body.choices) {
 					if(Array.isArray(body.choices))
 						question.choices = body.choices;
@@ -87,12 +70,7 @@ function putQuestion(questionId, body, callback) {
 						question.choices = body.choices.split(";");
 				}
 				if(body.answer)		question.answer	 = body.answer;
-				if(body.quizzes) {
-					if(Array.isArray(body.quizzes))
-						question.quizzes = body.quizzes;
-					else
-						question.quizzes = body.quizzes.split(";");
-				}				
+				if(body.quizz)  	question.quizz 	 = body.quizz;
 				question.save(function(err) {
 					if(err) callback(500, {error: err});
 					else {
@@ -217,7 +195,6 @@ module.exports = function(router, passport) {
 			else 	res.status(200).json({result: "disconnected"});
 		});
 	});
-
 	
 	// =============================================
 	// API/QUIZZ/ ==================================
@@ -238,10 +215,10 @@ module.exports = function(router, passport) {
 	// add a quizz	
 	.post(checkToken, function(req, res) {
 		// check req.body
-		if(req.body && req.body.name && req.body.language) {
+		if(req.body && req.body.name && req.body.locale) {
 			var quizz = new Quizz();
 			quizz.name 		= req.body.name;
-			quizz.language 	= req.body.language;
+			quizz.locale 	= req.body.locale;
 			
 			quizz.save(function(err) {
 				if(err) {
@@ -256,7 +233,7 @@ module.exports = function(router, passport) {
 			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}
 	});
-
+	
 	// =============================================
 	// API/QUIZZ/:ID ===============================
 	// =============================================
@@ -264,7 +241,7 @@ module.exports = function(router, passport) {
 	// get one quizz
 	.get(function(req, res) {
 		Quizz.findById(req.params.quizz_id)
-			 .populate("questions")
+			 .populate("questions")  // TODO: populate according to update parameter
 			 .exec(function(err, quizz) {
 			if(err) res.status(500).json({ error: err });
 			else if (quizz == null) {
@@ -277,7 +254,7 @@ module.exports = function(router, passport) {
 	})
 	// edit a given quizz
 	.put(checkToken, function(req, res) {
-		if(req.body && (req.body.name || req.body.language || req.body.questions)) {		
+		if(req.body && (req.body.name || req.body.locale || req.body.questions)) {		
 			Quizz.findById(req.params.quizz_id, function(err, quizz) {
 				if(err) {
 					res.status(500).json({ error: err });
@@ -289,7 +266,7 @@ module.exports = function(router, passport) {
 				}
 				else {
 					if(req.body.name) 		quizz.name = req.body.name;
-					if(req.body.language) 	quizz.name = req.body.language;
+					if(req.body.locale) 	quizz.locale = req.body.locale;
 					if(req.body.questions) 	quizz.questions = req.body.questions.split(";");
 					quizz.save(function(err) {
 						if(err) {
@@ -330,6 +307,53 @@ module.exports = function(router, passport) {
 				});
 			}
 		});
+	});
+	
+	// =============================================
+	// API/QUIZZ/:ID/QUESTION ======================
+	// =============================================
+	router.route('/quizz/:quizz_id/csv')
+	.post(checkToken, function(req, res) {
+		if(req.files != null && req.files.csv.mimetype == "text/csv") {
+			file = req.files.csv;
+			// csv parser init
+			var stream = csvParser({
+				headers: ["id", "lang", "topic", "tag", "question", "correctAnswer", "answer2", "answer3", "answer4", "size", "author", "relector", "difficulty", "keep"],
+				separator: ';',
+				newline: '\n'
+			});
+			
+			var notSavedQuestions = [];
+			// get the csv file stream them parse it
+			fs.createReadStream(file.path)
+				.pipe(stream)
+				.on('data', function(rawQuestion) {
+					// each csv line, this is executed.
+					if(rawQuestion.keep == "OUI" && rawQuestion.id.length > 0) {
+						// First, find the question if exists
+						Question.findOne({ 'customId': rawQuestion.id }, function (err, question) {
+							if(question == null) question = new Question();
+							// then overwrite its properties
+							question.customId= rawQuestion.id;
+							question.text	 = rawQuestion.question;
+							question.topic	 = rawQuestion.topic;
+							question.choices = [rawQuestion.correctAnswer, rawQuestion.answer2, rawQuestion.answer3, rawQuestion.answer4];
+							question.answer	 = 0;
+							question.quizz 	 = req.params.quizz_id;
+							question.save();
+						});
+					}
+					else {
+						notSavedQuestions.push(rawQuestion);
+					}
+			})
+				.on('end', function () {
+					res.status(200).json({notSaved: notSavedQuestions});
+				});
+		}
+		else {
+			res.status(400).json( { error: "wrong parameters"});
+		}
 	});
 	
 	// =============================================
@@ -418,6 +442,20 @@ module.exports = function(router, passport) {
 			res.status(400).json({ error: "invalid parameters", body: req.body });
 		}
 	})
+	// Deletes more than one questions
+	.delete(checkToken, function(req, res) {
+		if(req.body.toRemove) {
+			req.body.toRemove.forEach(function(id) {
+				deleteQuestion(id, function() {
+					
+				});
+			});
+			res.status(200).json({});
+		}
+		else {
+			res.status(400).json({ error: "invalid parameters", body: req.body });
+		}
+	});
 
 	// =============================================
 	// API/QUESTION/:ID ==================

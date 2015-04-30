@@ -3,18 +3,21 @@ var questionModule = angular.module('QuestionModule', ['LoginModule', 'ui.bootst
 
 questionModule.controller('QuestionListController', function($scope, $location, $routeParams, $modal, QuestionService) {
 
-	if($routeParams.quizz_id) {
-		// user is asking for questions relative to a quizz
-		QuestionService.getForQuizz($routeParams.quizz_id).success(function(questions) {
-	    	$scope.questions = questions;
-	    });
+	var loadQuestions = function(quizzId) {
+		if(quizzId) {
+			// user is asking for questions relative to a quizz
+			QuestionService.getForQuizz($routeParams.quizz_id).success(function(questions) {
+		    	$scope.questions = questions;
+		    });			
+		}
+		else {
+	    	// user is asking for all questions.
+		    QuestionService.getAll().success(function(questions) {
+		    	$scope.questions = questions;
+		    });
+		}
 	}
-    else {
-    	// user is asking for all questions.
-	    QuestionService.getAll().success(function(questions) {
-	    	$scope.questions = questions;
-	    });
-	}
+	loadQuestions($routeParams.quizz_id);
 		
 	$scope.newQuestion = function(question) {
 		// Open edit view
@@ -54,6 +57,47 @@ questionModule.controller('QuestionListController', function($scope, $location, 
 			
 		});
 	}
+	
+	$scope.askRemoveMulti = function(question) {
+		var toRemove = $scope.questions.filter(function(question){
+			return question.toRemove;
+		})
+		var caption = toRemove.map(function(elem){
+			return elem.customId;
+		}).join(", ");
+		var modalInstance = $modal.open({
+			templateUrl: 'js/modules/AlertModule/alertView.html',
+			controller: 'AlertController',
+			size: "sm",
+			resolve: {
+				data : function() {
+				return {title: "Attention",
+						message: "Voulez vous supprimer les questions suivantes : \n" + caption,
+						okButton: "Supprimer",
+						cancelButton: "Annuler"};
+				}
+			}
+		});
+		modalInstance.result.then(function () {
+			// delete on server
+			var toRemoveIds = toRemove.map(function(elem){
+				return elem._id;
+			});
+			QuestionService.deleteMultiple(toRemoveIds).success(function(result) {
+				// then delete on interface
+				toRemove.forEach(function(question) {
+					var index = $scope.questions.indexOf(question);
+		  			$scope.questions.splice(index, 1);
+				});
+			});
+		}, function () {
+			
+		});
+	}
+	
+	$scope.$on('QuestionListChanged', function(event, data) { 
+		loadQuestions($routeParams.quizz_id);
+	});
 });
 
 questionModule.controller('QuestionController', function($scope, $routeParams, $location, question, QuestionService) {
@@ -65,7 +109,7 @@ questionModule.controller('QuestionController', function($scope, $routeParams, $
 		$scope.choice = [];
 		
 		var i = 0;
-		$scope.choices = question.choices.map(function(string) {
+		$scope.choices = question.choices.map(function(string) {
 			return {text: string, index: i++};
 		});
 	}
@@ -123,6 +167,16 @@ questionModule.factory('QuestionService', function($http, Session) {
 
         delete : function(id) {
             return $http.delete('/api/question/' + id);
+        },
+        deleteMultiple : function(ids) {
+			var body = {toRemove: ids};
+			var config = {
+			    method: "DELETE",
+			    url: "/api/question",
+			    data: body,
+			    headers: {"Content-Type": "application/json;charset=utf-8"}
+			};
+			return $http(config);
         }
     }       
 

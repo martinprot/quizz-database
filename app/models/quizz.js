@@ -17,21 +17,16 @@ var quizzSchema = new Schema({
 		default : Date.now
 	},
 	questions 	: [ { type: Schema.ObjectId, ref: 'Question'} ],
-	language	: String
+	locale		: String,
+	apps		: [String]
 });
 
 // middlewares =================
 quizzSchema.pre('remove', function(next) {
-	// Nullify this quizz ref from question list
+	// Cascade
     var QuestionModel = this.model('Question');
-	QuestionModel.update(
-	    {quizzes: this._id},
-	    {$pull: {quizzes: this._id}},
-	    {multi: true},
-	    function(err, numberAffected, rawResponse) {
-	    	next();
-	    }
-	);
+	QuestionModel.remove({quizz: this._id}).exec();
+   	next();
 });
 
 quizzSchema.pre('save', function (next) {

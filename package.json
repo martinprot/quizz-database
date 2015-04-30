@@ -7,12 +7,14 @@
 	    "body-parser" 			: "~1.4.2",
    		"cookie-parser"			: "~1.0.0",
 	    "method-override"		: "~2.0.2",
+		"multer"				: "~0.1.8",
 		"passport" 				: "~0.1.17",         
 	    "passport-local" 		: "~0.1.6",
 		"passport-http-bearer" 	: "~1.0.1",
 	    "express-session"		: "~1.0.0",
 	    "connect-flash"			: "~0.1.1",  
 		
+		"csv-parser"			: "~1.5.2",
 		"morgan"				: "~1.0.0",
 		"bcrypt-nodejs" 		: "latest",
 		"jwt-simple"			: "latest"

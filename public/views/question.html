@@ -17,11 +17,11 @@
 			  </div>
 			</div>
 			
-			<!-- Textarea -->
+			<!-- Text input-->
 			<div class="form-group">
-			  <label class="col-md-4 control-label" for="question_detail">Détails</label>
-			  <div class="col-md-4">                     
-			    <textarea class="form-control" id="question_detail" name="question_detail" ng-model="question.detail"></textarea>
+			  <label class="col-md-4 control-label" for="question_topic">Thème</label>
+			  <div class="col-md-8">  
+				<input id="question_topic" name="question_topic" type="text" placeholder="Thème de la question" class="form-control input-md" required="" ng-model="question.topic">
 			  </div>
 			</div>
 					
@@ -42,7 +42,7 @@
 			<div class="form-group">
 			  <label class="col-md-4 control-label" for="difficulty">Difficulté prédéfinie</label>  
 			  <div class="col-md-2">
-			  <input id="difficulty" name="difficulty" type="text" placeholder="" class="form-control input-md" ng-model="question.predefinedDifficulty">
+			  <input id="difficulty" name="difficulty" type="text" placeholder="" class="form-control input-md" ng-model="question.difficulty">
 			    
 			  </div>
 			</div>
