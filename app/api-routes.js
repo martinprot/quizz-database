@@ -265,8 +265,9 @@ module.exports = function(router, passport) {
 					});
 				}
 				else {
-					if(req.body.name) 		quizz.name = req.body.name;
-					if(req.body.locale) 	quizz.locale = req.body.locale;
+					if(req.body.name) 		quizz.name 		= req.body.name;
+					if(req.body.locale) 	quizz.locale 	= req.body.locale;
+					if(req.body.apps)	 	quizz.apps 		= req.body.apps;
 					if(req.body.questions) 	quizz.questions = req.body.questions.split(";");
 					quizz.save(function(err) {
 						if(err) {
@@ -354,6 +355,19 @@ module.exports = function(router, passport) {
 		else {
 			res.status(400).json( { error: "wrong parameters"});
 		}
+	});
+	
+	// =============================================
+	// API/QUESTION/ ===============================
+	// =============================================
+	// All topics for this quizz
+	router.route("/quizz/:quizz_id/topic") 
+	.get(function(req, res) {
+		Question.find({quizz: req.params.quizz_id}).distinct('topic', function(err, topics) {
+			if(err) res.status(500).json({ error: err.toString() });
+			else
+				res.status(200).json(topics);
+		});
 	});
 	
 	// =============================================

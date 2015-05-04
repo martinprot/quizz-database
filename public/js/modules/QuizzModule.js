@@ -27,10 +27,24 @@ quizzModule.controller('QuizzController', function($scope, $route, $location, qu
 		$scope.action = "Edition";
 		$scope.quizz = quizz;
 		$scope.buttonCaption = "Mettre à jour";
+
+		QuizzService.topics(quizz._id).success(function(topics) {
+			$scope.topics = topics
+		});
 	}
 	else {
 		$scope.action = "Nouveau quizz";
 		$scope.buttonCaption = "Enregistrer";
+	}
+	$scope.addAppId = function(app) {
+		if(app) {
+			$scope.quizz.apps.push(app);
+			$scope.newapp = "";
+		}
+	}
+	$scope.removeApp = function(app) {
+		var index = $scope.quizz.apps.indexOf(app);
+		$scope.quizz.apps.splice(index, 1);
 	}
 	$scope.submit = function(quizz) {
 		if(quizz.name && quizz.locale) {
@@ -40,17 +54,26 @@ quizzModule.controller('QuizzController', function($scope, $route, $location, qu
 			}
 			else {
 				var file = document.getElementById('quizz_csv').files[0];
-				
-				var fd = new FormData();
-			    fd.append("csv", file);
-			    fd.append("name", quizz.name);
-			    fd.append("locale", quizz.locale);
-				QuizzService.uploadCSV(quizz._id, fd).then(function(result) {
-					if(result.data.notSaved.length)
-						$scope.notAdded = result.data.notSaved;
+				if(file) {
+					var fd = new FormData();
+				    fd.append("csv", file);
+				    fd.append("name", quizz.name);
+				    fd.append("locale", quizz.locale);
+				    fd.append("apps", quizz.apps);
+					QuizzService.uploadCSV(quizz._id, fd).then(function(result) {
+						if(result.data.notSaved.length)
+							$scope.notAdded = result.data.notSaved;
 				    
-					$scope.$broadcast('QuestionListChanged');
-				});
+						$scope.$broadcast('QuestionListChanged');
+					});
+				}
+				else {
+					QuizzService.update(quizz._id, {
+						name : quizz.name,
+						locale : quizz.locale,
+						apps : quizz.apps
+					});
+				}
 			}
 		} else {
 			// do form coloration	
@@ -89,7 +112,12 @@ quizzModule.factory('QuizzService', function($http, Session) {
         // call to DELETE a quizz
         delete : function(id) {
             return $http.delete('/api/quizz/' + id);
-        }
+        },
+		
+		// Get all the topics for this quizz
+		topics : function(quizzId) {
+			return $http.get('/api/quizz/' + quizzId + '/topic');
+		}
     }       
 
 });

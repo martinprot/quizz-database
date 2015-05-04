@@ -36,6 +36,11 @@ questionModule.controller('QuestionListController', function($scope, $location, 
   			$scope.questions.splice(index, 1);
 		});
 	}
+	$scope.selectAll = function(removeAll) {
+		$scope.questions.forEach(function(question) {
+			question.toRemove = removeAll;
+		});
+	}
 	
 	$scope.askRemoveQuestion = function(question) {
 		var modalInstance = $modal.open({
@@ -43,7 +48,7 @@ questionModule.controller('QuestionListController', function($scope, $location, 
 			controller: 'AlertController',
 			size: "sm",
 			resolve: {
-				data : function() {
+				data : function() {
 				return {title: "Attention",
 						message: "Voulez vous supprimer cette question ?",
 						okButton: "Supprimer",

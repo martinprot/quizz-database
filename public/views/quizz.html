@@ -2,46 +2,86 @@
 
 <div>
     <h1>Quizz</h1>
-    
-    <form class="form-horizontal">
-		<fieldset>
+    <div class="row">
+		<div class="col-lg-6">
+		    <form class="form-horizontal">
+				<fieldset>
+					<!-- Form Name -->
+					<legend>{{ action }}</legend>
+			
+					<!-- Text input-->
+					<div class="form-group">
+					  <label class="col-md-4 control-label" for="quizz_name">Nom</label>  
+					  <div class="col-md-8">
+					    <input id="quizz_name" name="quizz_name" type="text" placeholder="Nom du quizz" class="form-control input-md" required="" ng-model="quizz.name">
+					  </div>
+					</div>
+			
+					<!-- Text input-->
+					<div class="form-group">
+					  <label class="col-md-4 control-label" for="quizz_locale">Locale</label>  
+					  <div class="col-md-8">
+						<input id="quizz_locale" name="quizz_locale" type="text" placeholder="Langue (ex: fr_FR)" class="form-control input-md" required="" ng-model="quizz.locale">
+					  </div>
+					</div>
+			
+					<!-- File input-->
+					<div ng-if="!!quizz" class="form-group">
+					  <label class="col-md-4 control-label" for="quizz_csv">CSV</label>  
+					  <div class="col-md-8">
+						<input id="quizz_csv" name="quizz_csv" type="file" class="form-control input-md" required="">
+					  </div>
+					</div>
+			
+					<!-- Button -->
+					<div class="form-group">
+					  <label class="col-md-4 control-label" for="singlebutton"></label>
+					  <div class="col-md-4">
+					    <button id="singlebutton" name="singlebutton" class="btn btn-primary" ng-click="submit(quizz)">{{ buttonCaption }}</button>
+					  </div>
+					</div>
+				</fieldset>
+			</form>
+		</div>
+		<div class="col-lg-6">
 			<!-- Form Name -->
-			<legend>{{ action }}</legend>
+			<legend>Applications</legend>
 			
-			<!-- Text input-->
-			<div class="form-group">
-			  <label class="col-md-4 control-label" for="quizz_name">Nom</label>  
-			  <div class="col-md-8">
-			    <input id="quizz_name" name="quizz_name" type="text" placeholder="Nom du quizz" class="form-control input-md" required="" ng-model="quizz.name">
+			<form class="form-inline">
+			  <div class="form-group">
+			    <input type="text" class="form-control" id="exampleInputName2" placeholder="Application id" ng-model="newapp">
 			  </div>
-			</div>
+			  <button type="submit" class="btn btn-default" ng-click="addAppId(newapp)">+</button>
+			</form>
 			
-			<!-- Text input-->
-			<div class="form-group">
-			  <label class="col-md-4 control-label" for="quizz_locale">Locale</label>  
-			  <div class="col-md-8">
-				<input id="quizz_locale" name="quizz_locale" type="text" placeholder="Langue (ex: fr_FR)" class="form-control input-md" required="" ng-model="quizz.locale">
-			  </div>
-			</div>
-			
-			<!-- File input-->
-			<div ng-if="!!quizz" class="form-group">
-			  <label class="col-md-4 control-label" for="quizz_csv">CSV</label>  
-			  <div class="col-md-8">
-				<input id="quizz_csv" name="quizz_csv" type="file" class="form-control input-md" required="">
-			  </div>
-			</div>
-			
-			<!-- Button -->
-			<div class="form-group">
-			  <label class="col-md-4 control-label" for="singlebutton"></label>
-			  <div class="col-md-4">
-			    <button id="singlebutton" name="singlebutton" class="btn btn-primary" ng-click="submit(quizz)">{{ buttonCaption }}</button>
-			  </div>
-			</div>
-		</fieldset>
-	</form>
+		    <table class="table">
+				<thead>
+					<tr><th>App ids</th><th>Supprimer</th><tr>
+				</thead>
+				<tbody>
+					<tr ng-repeat="appid in quizz.apps">
+						<td>{{appid}}</td>
+						<td>
+							<button ng-click="removeApp(appid)" type="button" class="btn btn-sm"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
+						</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+	</div>
 	<div ng-if="!!quizz">
+		<div>
+			<h3>Thèmes</h3>
+		    <div class="panel panel-default">
+			    <table class="table">
+					<tbody>
+						<tr ng-repeat="topic in topics">
+							<td>{{topic}}</td>
+						</tr>
+					</tbody>
+			    </table>
+			</div>
+		</div>
 		<div ng-controller="QuestionListController">
 			
 			    <h3>Questions</h3>
@@ -61,6 +101,9 @@
 								</div>
 								<div class="col-lg-1">
 									<button ng-click="askRemoveMulti()" type="button" class="btn btn-danger"><span class="glyphicon glyphicon-trash" aria-hidden="true"></span></button>
+									<label>
+										<input type="checkbox" ng-click="selectAll(removeAll)" ng-model="removeAll" value="option1" aria-label="...">
+									</label>
 								</div>
 							</div>
 					    </div>
